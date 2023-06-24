@@ -2,8 +2,9 @@
 # Author:	Siyuan Liu
 # E-mail:	siyuanl96@gmail.com
 
-# export SHELL_CMD_COMP_DIR="/home/`whoami`/.shellCmdComp.d/"
-SHELL_CMD_COMP_DIR=".shellCmdComp.d/"
+export SHELL_CMD_COMP_DIR="/home/`whoami`/.shellCmdComp.d/"
+# For debug
+# SHELL_CMD_COMP_DIR=".shellCmdComp.d/"
 
 if [ ! -d "${SHELL_CMD_COMP_DIR}" ]; then
 	mkdir ${SHELL_CMD_COMP_DIR}
@@ -18,16 +19,24 @@ function _shell_cmd_complete_push_stack() {
 
 	mark=`sed -n ''$line',+0p' $cmd_tree | sed 's/[ \t]//g'`
 
-	# echo $cmd_tree
-	# echo begin
-	# cat $cmd_tree
-	# echo end
-
 	line=`expr $line + 1`
 
 	if [ "$mark" == "*" ]; then
 		stack=`sed -n ''${line}',/^'${indent%??}'\S/p' $cmd_tree | sed -n '/^'${indent}'\S/p'`
 		echo $stack
+	fi
+}
+
+function _shell_cmd_complete_cmd_end() {
+	local cmd_tree=$1
+	local line=$2
+	local indent=$3
+	local opts=""
+
+	opts=`sed -n ''${line}',/^'${indent%??}'\S/p' $cmd_tree | sed -n '/^'${indent}'\S/p' | sed -n '/[^*@$]$/p'`
+
+	if [ "$opts" == "" ]; then
+		echo 1
 	fi
 }
 
@@ -37,42 +46,68 @@ function _shell_cmd_complete() {
 	local cmd=${COMP_WORDS[0]}
 
 	# The first line is reserved.
-	local line=2
+	local line=1
 	local indent="\t"
 	local cmd_tree="${SHELL_CMD_COMP_DIR}${cmd}.comp"
 	local match=""
 	local stack=()
+	local stack_line=()
 	local arr=()
 	local opts=""
-	local mark=""
-	local level=1
+	local level=0
+	local push=1
+	local same=0
 
-	mark=`sed -n '2,2p' $cmd_tree | sed 's/[ \t]//g'`
-	# echo "mark:$mark"
-
-	if [ "$mark" == "*" ]; then
-		stack[1]=`sed -n '3,/^'${indent%??}'\S/p' $cmd_tree | sed -n '/^\t\S/p'`
-		# stack=$(echo "${stack[*]}")
-		stack[1]=`echo ${stack[1]} | sed 's/[\t\n]//g'`
-		stack[1]="${stack[1]} "
-		# echo "stack:${stack[0]}"
-	fi
-
-	# if [ $COMP_CWORD -gt 1 ]; then
-	# 	# Find the start line of the first sub-command.
-	# 	match="\t${COMP_WORDS[1]}"
-	# 	line=`sed -n '/'${match}'/=' $cmd_tree`
-
-	# 	if [ "$line" == "" ]; then
-	# 		return 0
-	# 	fi
-	# fi
-
-	# Find next level sub-command.
+	# process sub-command
 	for i in $(seq 2 $COMP_CWORD)
 	do
+		if [ $push -eq 1 ]; then
+			level=`expr $level + 1`
+			stack_line[$level]=$line
+			stack[level]=$(_shell_cmd_complete_push_stack $line $indent $cmd_tree)
+		else
+			indent=${indent%??}
+
+			# Find the level to which the previous cmd belongs.
+			local cmd_level=$level
+
+			while [ $cmd_level -gt 0 ]
+			do
+				if [ "${stack[cmd_level]}" != "" ]; then
+					local belong=`echo ${stack[cmd_level]} | sed -n '/'${COMP_WORDS[i-1]}'/p'`
+
+					if [ "$belong" != "" ]; then
+						break
+					fi
+				fi
+
+				cmd_level=`expr $cmd_level - 1`
+				indent=${indent%??}
+			done
+
+			# echo "cmd_level:$cmd_level, level:$level"
+
+			if [ "$cmd_level" != "$level" ]; then
+				level=$cmd_level
+
+				while [[ "${stack[level]}" == " " ]]
+				do
+					if [ $level -lt 1 ]; then
+						break
+					fi
+
+					level=`expr $level - 1`
+					indent=${indent%??}
+				done
+			fi
+
+			line=${stack_line[level]}
+		fi
+
 		stack[level]=`echo ${stack[level]} | sed 's/'${COMP_WORDS[i-1]}'/ /'`
-		# echo "stack[$level]Begin: ${stack[level]} :end"
+
+		# echo "stack[$level]B: ${stack_line[level]} ${stack[level]} :E"
+
 		match="${indent}${COMP_WORDS[i-1]}"
 
 		# echo "line:$line match:$match"
@@ -82,22 +117,33 @@ function _shell_cmd_complete() {
 		arr=($line)
 		line=${arr[-1]}
 
-		if [ "$line" == "" ]; then
-			indent=${indent%??}
-			level=`expr $level - 1`
-			return 0
+		local end=$(_shell_cmd_complete_cmd_end $cmd_tree $line "${indent}\t")
+
+		if [ "$end" == "1" ]; then
+			# echo "POP stack"
+			push=0
 		else
-			indent="${indent}\t"
-			level=`expr $level + 1`
+			push=1
 		fi
 
-		stack[level]=$(_shell_cmd_complete_push_stack $line $indent $cmd_tree)
-
-		# echo "Search from line:$line"
-		# _shell_cmd_complete_push_stack $line $indent $cmd_tree
+		indent="${indent}\t"
 	done
 
+	# echo "Search from line:$line indent:$indent"
+
 	opts=`sed -n ''${line}',/^'${indent%??}'\S/p' $cmd_tree | sed -n '/^'${indent}'\S/p' | sed -n '/[^*@$]$/p'`
+
+	if [ "$opts" == "" ]; then
+		# Return to the level where sub-commands can be appended
+		for j in $(seq 0 $level)
+		do
+			# echo "Back stack[`expr $level - $j`]:${stack[level-j]}"
+
+			if [ "${stack[level-j]}" != "" ]; then
+				opts="${opts}${stack[level-j]}"
+			fi
+		done
+	fi
 
 	COMPREPLY=( $(compgen -W '$opts' -- $cur) )
 

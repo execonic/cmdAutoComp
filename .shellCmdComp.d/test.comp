@@ -4,9 +4,12 @@ Anything
 		*
 		param1
 		param2
+		param4
 			*
 			abc
 	--option2
 		@
 		param3
 	--option3
+		@
+		param4
