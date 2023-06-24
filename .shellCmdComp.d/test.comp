@@ -1,0 +1,12 @@
+Anything
+	*
+	--option1
+		*
+		param1
+		param2
+			*
+			abc
+	--option2
+		@
+		param3
+	--option3
