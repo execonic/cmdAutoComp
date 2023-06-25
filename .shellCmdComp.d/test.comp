@@ -2,14 +2,17 @@ Anything
 	*
 	--option1
 		*
-		param1
-		param2
-		param4
-			*
-			abc
+		param11
+		param12
+		param13
+			@
+			param131
+			param132
 	--option2
-		@
-		param3
+		*
+		param21
+		param22
 	--option3
 		@
-		param4
+		param31
+		param32
