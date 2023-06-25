@@ -18,14 +18,16 @@ Sub-commands are organized into a **tree** in the `.comp` file. The coding rules
 - Subsequent lines are used to enumerate sub-commands. These sub-commands are organized in a tree. Each child command is indented **one tab** back from the parent command.
 - The first-level sub-command should be indented **one tab** from the beginning of the line
 - Each level of command nodes should start with a dedicated line that determines how to handle the command nodes at the current level. Only the following symbols can be used for dedicated lines.
-  - `*` All sub-commands of the current level can be used together.
+  - `&` All sub-commands of the current level can be used together.
   - `@` Only one sub-command of the current level can be used.
+  - `*` Current sub-command supports any input parameter.
 
 ## Example
 There is a command `test` which supports the following sub-commands.
 
 - `--option1 param11`
 - `--option1 param12`
+- `--option1 param12 <anything>`
 - `--option1 param13 param131`
 - `--option1 param13 param132`
 - `--option2 param21`
@@ -40,17 +42,18 @@ Then the name of the `.comp` file must be `test.comp`. The contents of this file
 
 ```
 Anything
-	*
+	&
 	--option1
-		*
+		&
 		param11
 		param12
+			*
 		param13
 			@
 			param131
 			param132
 	--option2
-		*
+		&
 		param21
 		param22
 	--option3

@@ -21,7 +21,7 @@ function _shell_cmd_complete_push_stack() {
 
 	line=`expr $line + 1`
 
-	if [ "$mark" == "*" ]; then
+	if [ "$mark" == "&" ]; then
 		stack=`sed -n ''${line}',/^'${indent%??}'\S/p' $cmd_tree | sed -n '/^'${indent}'\S/p'`
 		echo $stack
 	fi
@@ -33,7 +33,7 @@ function _shell_cmd_complete_cmd_end() {
 	local indent=$3
 	local opts=""
 
-	opts=`sed -n ''${line}',/^'${indent%??}'\S/p' $cmd_tree | sed -n '/^'${indent}'\S/p' | sed -n '/[^*@$]$/p'`
+	opts=`sed -n ''${line}',/^'${indent%??}'\S/p' $cmd_tree | sed -n '/^'${indent}'\S/p' | sed -n '/[^&@$]$/p'`
 
 	if [ "$opts" == "" ]; then
 		echo 1
@@ -74,6 +74,7 @@ function _shell_cmd_complete() {
 			while [ $cmd_level -gt 0 ]
 			do
 				if [ "${stack[cmd_level]}" != "" ]; then
+					match="${COMP_WORDS[i-1]//\//\\/}"
 					local belong=`echo ${stack[cmd_level]} | sed -n '/'${COMP_WORDS[i-1]}'/p'`
 
 					if [ "$belong" != "" ]; then
@@ -104,11 +105,12 @@ function _shell_cmd_complete() {
 			line=${stack_line[level]}
 		fi
 
-		stack[level]=`echo ${stack[level]} | sed 's/'${COMP_WORDS[i-1]}'/ /'`
+		match="${COMP_WORDS[i-1]//\//\\/}"
+		stack[level]=`echo ${stack[level]} | sed 's/'${match}'/ /'`
 
 		# echo "stack[$level]B: ${stack_line[level]} ${stack[level]} :E"
 
-		match="${indent}${COMP_WORDS[i-1]}"
+		match="${indent}${match}"
 
 		# echo "line:$line match:$match"
 
@@ -131,7 +133,7 @@ function _shell_cmd_complete() {
 
 	# echo "Search from line:$line indent:$indent"
 
-	opts=`sed -n ''${line}',/^'${indent%??}'\S/p' $cmd_tree | sed -n '/^'${indent}'\S/p' | sed -n '/[^*@$]$/p'`
+	opts=`sed -n ''${line}',/^'${indent%??}'\S/p' $cmd_tree | sed -n '/^'${indent}'\S/p' | sed -n '/[^&@$]$/p'`
 
 	if [ "$opts" == "" ]; then
 		# Return to the level where sub-commands can be appended
@@ -145,7 +147,12 @@ function _shell_cmd_complete() {
 		done
 	fi
 
-	COMPREPLY=( $(compgen -W '$opts' -- $cur) )
+	# '*' means it supports any input parameters.
+	if [[ "${opts}" =~ "*" ]]; then
+		_filedir
+	else
+		COMPREPLY=( $(compgen -W '$opts' -- $cur) )
+	fi
 
 	return 0
 }

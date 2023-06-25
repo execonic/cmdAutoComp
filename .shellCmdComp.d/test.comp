@@ -1,15 +1,16 @@
 Anything
-	*
+	&
 	--option1
-		*
+		&
 		param11
 		param12
+			*
 		param13
 			@
 			param131
 			param132
 	--option2
-		*
+		&
 		param21
 		param22
 	--option3
