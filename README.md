@@ -1,5 +1,5 @@
 # CmdAutoComp
-`CmdAutoComp` is a tool for simplifying the implementation of auto-completion of commands. It relies on the **`complete`** command on the Linux shell and a command tree file (with the suffix `.comp`) designed by me. After installing this tool, when you want to auto-complete a command, you just need to make a `.comp` file like [example](#example). You can watch the [demo video](https://pushmindstack.com/doku.php?id=opensource:cmd-comp#demo_video) first to check if it meets your needs.
+`CmdAutoComp` is a tool for simplifying the implementation of auto-completion of commands. It relies on the **`complete`** command on the Linux shell and a command tree file (with the suffix `.comp`) designed by me. After installing this tool, when you want to auto-complete a command, you just need to make a `.comp` file like [example](#example). You can watch the [demo video](#demo-video) first to check if it meets your needs.
 
 ## Usage
 You can refer to [example](#example) to try it out.
@@ -103,3 +103,7 @@ bashrc             LICENSE            shell-cmd-comp.sh
 source@debian:cmdAutoComp$ ./test --option
 --option1  --option2  --option3
 ```
+## Demo Video
+
+[](https://github.com/siyuanl96/cmdAutoComp/assets/27429124/91e40237-e44a-409e-834d-896dda3cbbcf)
+
